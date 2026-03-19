@@ -3,9 +3,11 @@ package com.dynatrace.pong.service;
 import com.dynatrace.pong.dto.PlayerRequest;
 import com.dynatrace.pong.dto.PlayerResponse;
 import com.dynatrace.pong.exception.DuplicateEmailException;
+import com.dynatrace.pong.exception.PlayerHasMatchesException;
 import com.dynatrace.pong.exception.PlayerNotFoundException;
 import com.dynatrace.pong.model.Player;
 import com.dynatrace.pong.repository.PlayerRepository;
+import com.dynatrace.pong.repository.TournamentMatchRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,6 +27,9 @@ class PlayerServiceTest {
 
     @Mock
     private PlayerRepository playerRepository;
+
+    @Mock
+    private TournamentMatchRepository tournamentMatchRepository;
 
     @InjectMocks
     private PlayerService playerService;
@@ -112,6 +117,7 @@ class PlayerServiceTest {
     @Test
     void deletePlayer_shouldDeleteSuccessfully() {
         when(playerRepository.existsById(1L)).thenReturn(true);
+        when(tournamentMatchRepository.existsByPlayerOneIdOrPlayerTwoId(1L, 1L)).thenReturn(false);
 
         playerService.deletePlayer(1L);
 
@@ -125,6 +131,18 @@ class PlayerServiceTest {
         assertThatThrownBy(() -> playerService.deletePlayer(99L))
                 .isInstanceOf(PlayerNotFoundException.class)
                 .hasMessageContaining("99");
+
+        verify(playerRepository, never()).deleteById(any());
+    }
+
+    @Test
+    void deletePlayer_withRecordedMatches_shouldThrowException() {
+        when(playerRepository.existsById(1L)).thenReturn(true);
+        when(tournamentMatchRepository.existsByPlayerOneIdOrPlayerTwoId(1L, 1L)).thenReturn(true);
+
+        assertThatThrownBy(() -> playerService.deletePlayer(1L))
+                .isInstanceOf(PlayerHasMatchesException.class)
+                .hasMessageContaining("1");
 
         verify(playerRepository, never()).deleteById(any());
     }

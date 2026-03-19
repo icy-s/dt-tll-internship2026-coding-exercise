@@ -23,6 +23,16 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.CONFLICT, ex.getMessage());
     }
 
+    @ExceptionHandler(PlayerHasMatchesException.class)
+    public ResponseEntity<Map<String, Object>> handlePlayerHasMatches(PlayerHasMatchesException ex) {
+        return buildResponse(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
+    @ExceptionHandler(InvalidMatchResultException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidMatchResult(InvalidMatchResultException ex) {
+        return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handleValidationErrors(MethodArgumentNotValidException ex) {
         String errors = ex.getBindingResult().getFieldErrors().stream()

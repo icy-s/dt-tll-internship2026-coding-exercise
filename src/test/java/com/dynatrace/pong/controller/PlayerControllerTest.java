@@ -4,6 +4,7 @@ import com.dynatrace.pong.dto.PlayerRequest;
 import com.dynatrace.pong.dto.PlayerResponse;
 import com.dynatrace.pong.exception.DuplicateEmailException;
 import com.dynatrace.pong.exception.GlobalExceptionHandler;
+import com.dynatrace.pong.exception.PlayerHasMatchesException;
 import com.dynatrace.pong.exception.PlayerNotFoundException;
 import com.dynatrace.pong.service.PlayerService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -32,8 +33,7 @@ class PlayerControllerTest {
     @MockitoBean
     private PlayerService playerService;
 
-    @Autowired
-    private ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     private PlayerResponse sampleResponse() {
         return new PlayerResponse(1L, "Roger", "Federer", "roger@tennis.com", "Switzerland", 3);
@@ -209,6 +209,15 @@ class PlayerControllerTest {
         mockMvc.perform(delete("/api/players/99"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message", containsString("99")));
+    }
+
+    @Test
+    void deletePlayer_withRecordedMatches_shouldReturn409() throws Exception {
+        doThrow(new PlayerHasMatchesException(1L)).when(playerService).deletePlayer(1L);
+
+        mockMvc.perform(delete("/api/players/1"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message", containsString("cannot be deleted")));
     }
 }
 

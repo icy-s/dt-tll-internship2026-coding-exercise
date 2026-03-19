@@ -3,9 +3,11 @@ package com.dynatrace.pong.service;
 import com.dynatrace.pong.dto.PlayerRequest;
 import com.dynatrace.pong.dto.PlayerResponse;
 import com.dynatrace.pong.exception.DuplicateEmailException;
+import com.dynatrace.pong.exception.PlayerHasMatchesException;
 import com.dynatrace.pong.exception.PlayerNotFoundException;
 import com.dynatrace.pong.model.Player;
 import com.dynatrace.pong.repository.PlayerRepository;
+import com.dynatrace.pong.repository.TournamentMatchRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
@@ -16,9 +18,11 @@ import java.util.stream.Collectors;
 public class PlayerService {
 
     private final PlayerRepository playerRepository;
+    private final TournamentMatchRepository tournamentMatchRepository;
 
-    public PlayerService(PlayerRepository playerRepository) {
+    public PlayerService(PlayerRepository playerRepository, TournamentMatchRepository tournamentMatchRepository) {
         this.playerRepository = playerRepository;
+        this.tournamentMatchRepository = tournamentMatchRepository;
     }
 
     public PlayerResponse createPlayer(PlayerRequest request) {
@@ -56,6 +60,11 @@ public class PlayerService {
         if (!playerRepository.existsById(id)) {
             throw new PlayerNotFoundException(id);
         }
+
+        if (tournamentMatchRepository.existsByPlayerOneIdOrPlayerTwoId(id, id)) {
+            throw new PlayerHasMatchesException(id);
+        }
+
         playerRepository.deleteById(id);
     }
 
